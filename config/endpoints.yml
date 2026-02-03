@@ -1,0 +1,25 @@
+endpoints:
+  - name: LM Studio
+    address: 192.168.0.31
+    port: 1234
+    enabled: true
+  - name: CPP1
+    address: 192.168.0.31
+    port: 8033
+    enabled: true
+  - name: CPP2
+    address: 192.168.0.31
+    port: 8034
+    enabled: true
+
+healthCheck:
+  interval: 300000
+  timeout: 5000
+  path: /v1/models
+  failureThreshold: 1
+
+cache:
+  ttl: 30000
+
+server:
+  port: 8080
