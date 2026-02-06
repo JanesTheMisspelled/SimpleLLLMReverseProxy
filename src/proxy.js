@@ -10,6 +10,7 @@ class Proxy {
   }
 
   async proxyChatCompletions(req, res) {
+    let endpoint;
     try {
       let body;
       try {
@@ -26,7 +27,7 @@ class Proxy {
         return;
       }
 
-      const endpoint = await this.findEndpointForModel(modelName);
+      endpoint = await this.findEndpointForModel(modelName);
       if (!endpoint) {
         const allModels = await modelsAggregator.getAllModels(false);
         const availableModels = allModels.data.map(m => m.id || m.name).join(', ');
@@ -37,6 +38,8 @@ class Proxy {
         });
         return;
       }
+
+      modelsAggregator.incrementConnection(endpoint.name);
 
       logger.info(`Proxying request for model ${modelName} to ${endpoint.name}`, {
         model: modelName,
@@ -82,6 +85,7 @@ class Proxy {
 
         proxyRes.on('end', () => {
           logger.info('Upstream response ended', { totalChunks: dataCount });
+          modelsAggregator.decrementConnection(endpoint.name);
           if (!res.writableEnded) {
             res.end();
           }
@@ -93,6 +97,7 @@ class Proxy {
           endpoint: endpoint.name,
           error: error.message 
         });
+        modelsAggregator.decrementConnection(endpoint.name);
         if (!res.headersSent) {
           res.status(502).json({ error: 'Bad gateway: Failed to reach endpoint' });
         }
@@ -100,10 +105,12 @@ class Proxy {
 
       res.on('close', () => {
         logger.info('Client connection closed');
+        modelsAggregator.decrementConnection(endpoint.name);
       });
 
       req.on('close', () => {
         logger.info('Request closed');
+        modelsAggregator.decrementConnection(endpoint.name);
       });
 
       logger.info('Writing request body to upstream', { size: req.body.length });
@@ -115,6 +122,9 @@ class Proxy {
       logger.error('Error in proxy chat completions', { error: error.message });
       if (!res.headersSent) {
         res.status(500).json({ error: 'Internal server error' });
+      }
+      if (endpoint) {
+        modelsAggregator.decrementConnection(endpoint.name);
       }
     }
   }

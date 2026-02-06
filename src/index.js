@@ -47,12 +47,14 @@ app.post('/v1/chat/completions', async (req, res) => {
 app.get('/health', (req, res) => {
   const healthStatus = healthChecker.getStatus();
   const healthyCount = Object.values(healthStatus).filter(s => s.healthy).length;
+  const connectionStats = modelsAggregator.getConnectionStats();
   
   res.json({
     status: healthyCount > 0 ? 'healthy' : 'unhealthy',
     endpoints: healthStatus,
     healthy_endpoints: healthyCount,
-    total_endpoints: Object.keys(healthStatus).length
+    total_endpoints: Object.keys(healthStatus).length,
+    active_connections: connectionStats
   });
 });
 
@@ -62,12 +64,14 @@ app.post('/health/force-check', async (req, res) => {
   const models = await modelsAggregator.getAllModels(true);
   const healthStatus = healthChecker.getStatus();
   const healthyCount = Object.values(healthStatus).filter(s => s.healthy).length;
+  const connectionStats = modelsAggregator.getConnectionStats();
   
   res.json({
     status: healthyCount > 0 ? 'healthy' : 'unhealthy',
     endpoints: healthStatus,
     healthy_endpoints: healthyCount,
-    total_endpoints: Object.keys(healthStatus).length
+    total_endpoints: Object.keys(healthStatus).length,
+    active_connections: connectionStats
   });
 });
 
