@@ -7,7 +7,8 @@ A simple reverse proxy manager for local LLM endpoints that aggregates models fr
 - **Model Aggregation**: Combines models from all healthy endpoints into a single `/v1/models` response
 - **Request Routing**: Routes `/v1/chat/completions` requests to the appropriate endpoint based on the model name
 - **Streaming Support**: Handles streaming responses from endpoints to clients
-- **Health Checking**: Monitors endpoint availability and auto-failover
+- **Health Checking**: Monitors endpoint availability and auto-failover with custom health check paths per endpoint
+- **Force Health Checks**: Manually trigger health checks on all endpoints via API
 - **Configuration**: Simple YAML-based endpoint configuration
 
 ## Installation
@@ -26,6 +27,7 @@ endpoints:
     address: 127.0.0.1
     port: 8001
     enabled: true
+    healthCheckPath: /health  # Optional: override global health check path, for example /health for llama-server
   - name: server2
     address: 127.0.0.1
     port: 8002
@@ -88,6 +90,27 @@ Request format:
 ### GET /health
 
 Returns health status of all endpoints.
+
+Response format:
+```json
+{
+  "status": "healthy",
+  "endpoints": {
+    "server1": {
+      "healthy": true,
+      "lastCheck": "2024-01-31T22:00:00.000Z",
+      "errorCount": 0,
+      "lastError": null
+    }
+  },
+  "healthy_endpoints": 2,
+  "total_endpoints": 2
+}
+```
+
+### POST /health/force-check
+
+Forces an immediate health check on all endpoints and returns the updated status.
 
 Response format:
 ```json

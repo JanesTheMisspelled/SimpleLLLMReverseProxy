@@ -33,10 +33,11 @@ class HealthChecker {
 
   async checkEndpoint(endpoint) {
     const url = this.getEndpointUrl(endpoint);
+    const healthCheckPath = endpoint.healthCheckPath || config.healthCheck.path;
     const status = this.endpointStatus.get(endpoint.name);
     
     try {
-      const response = await axios.get(`${url}${config.healthCheck.path}`, {
+      const response = await axios.get(`${url}${healthCheckPath}`, {
         timeout: config.healthCheck.timeout
       });
 
@@ -58,7 +59,7 @@ class HealthChecker {
         status.healthy = false;
         logger.warn(`Endpoint marked unhealthy: ${endpoint.name}`, { 
           endpoint: endpoint.name,
-          errorCount: status.errorCount,
+          errorCount: config.healthCheck.failureThreshold,
           error: error.message 
         });
       } else {
