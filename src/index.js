@@ -56,6 +56,19 @@ app.get('/health', (req, res) => {
   });
 });
 
+app.post('/health/force-check', async (req, res) => {
+  await healthChecker.checkAll();
+  const healthStatus = healthChecker.getStatus();
+  const healthyCount = Object.values(healthStatus).filter(s => s.healthy).length;
+  
+  res.json({
+    status: healthyCount > 0 ? 'healthy' : 'unhealthy',
+    endpoints: healthStatus,
+    healthy_endpoints: healthyCount,
+    total_endpoints: Object.keys(healthStatus).length
+  });
+});
+
 app.use((req, res) => {
   logger.warn('Route not found', { method: req.method, path: req.path });
   res.status(404).json({ error: 'Not found' });
