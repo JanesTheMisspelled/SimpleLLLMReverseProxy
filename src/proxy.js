@@ -28,7 +28,7 @@ class Proxy {
 
       const endpoint = await this.findEndpointForModel(modelName);
       if (!endpoint) {
-        const allModels = await modelsAggregator.getAllModels();
+        const allModels = await modelsAggregator.getAllModels(false);
         const availableModels = allModels.data.map(m => m.id || m.name).join(', ');
         
         res.status(404).json({ 

@@ -19,7 +19,7 @@ app.use((req, res, next) => {
 
 app.get('/v1/models', async (req, res) => {
   try {
-    const models = await modelsAggregator.getAllModels();
+    const models = await modelsAggregator.getAllModels(false);
     res.json(models);
     logger.info('Retrieved all models', { modelCount: models.data.length });
   } catch (error) {
@@ -58,6 +58,8 @@ app.get('/health', (req, res) => {
 
 app.post('/health/force-check', async (req, res) => {
   await healthChecker.checkAll();
+  modelsAggregator.clearCache();
+  const models = await modelsAggregator.getAllModels(true);
   const healthStatus = healthChecker.getStatus();
   const healthyCount = Object.values(healthStatus).filter(s => s.healthy).length;
   

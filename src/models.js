@@ -27,10 +27,10 @@ class ModelsAggregator {
     }
   }
 
-  async getAllModels() {
+  async getAllModels(force) {
     const now = Date.now();
     
-    if (this.cache && (now - this.cacheTimestamp) < config.cacheTTL) {
+    if (force==false && this.cache && (now - this.cacheTimestamp) < config.cacheTTL) {
       logger.debug('Returning cached models', { modelCount: this.cache.data.length });
       return this.cache;
     }
@@ -76,6 +76,12 @@ class ModelsAggregator {
     this.cacheTimestamp = now;
     
     return this.cache;
+  }
+
+  clearCache() {
+    this.cache = null;
+    this.cacheTimestamp = null;
+    logger.info('Cache cleared');
   }
 
   getCachedModels() {

@@ -39,6 +39,11 @@ healthCheck:
   path: /v1/models
   failureThreshold: 3          # Mark unhealthy after 3 failures
 
+cache:
+  ttlMs: 30000                 # Cache TTL in milliseconds (optional)
+  ttlMultiplier: null          # Cache TTL as multiplier of healthCheck interval (optional)
+                              # If both specified, the smaller value is used
+
 server:
   port: 8080
 ```
@@ -135,6 +140,7 @@ Response format:
 2. **Model Discovery**: When `/v1/models` is called, it fetches models from all healthy endpoints and combines them
 3. **Request Routing**: When `/v1/chat/completions` is called, it checks which endpoint supports the requested model and routes the request there
 4. **Streaming**: The proxy streams responses directly from the endpoint to the client without buffering
+5. **Caching**: The model list is cached according to the configured TTL. TTL can be specified as milliseconds (`ttlMs`) or as a multiplier of the health check interval (`ttlMultiplier`). If both are specified, the smaller value is used.
 
 ## Requirements
 
