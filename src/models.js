@@ -8,6 +8,7 @@ class ModelsAggregator {
     this.cache = null;
     this.cacheTimestamp = null;
     this.modelToEndpointMap = new Map();
+    this.activeConnections = new Map();
   }
 
   async fetchModelsFromEndpoint(endpoint) {
@@ -88,6 +89,36 @@ class ModelsAggregator {
     return this.cache;
   }
 
+  incrementConnection(endpointName) {
+    const current = this.activeConnections.get(endpointName) || 0;
+    this.activeConnections.set(endpointName, current + 1);
+    logger.debug(`Incremented connection for ${endpointName}`, { count: current + 1 });
+  }
+
+  decrementConnection(endpointName) {
+    const current = this.activeConnections.get(endpointName) || 0;
+    if (current > 0) {
+      this.activeConnections.set(endpointName, current - 1);
+      logger.debug(`Decremented connection for ${endpointName}`, { count: current - 1 });
+    }
+  }
+
+  getLeastConnectedEndpoint(endpoints) {
+    return endpoints.reduce((min, endpoint) => {
+      const connections = this.activeConnections.get(endpoint.name) || 0;
+      const minConnections = this.activeConnections.get(min.name) || 0;
+      return connections < minConnections ? endpoint : min;
+    });
+  }
+
+  getConnectionStats() {
+    const stats = {};
+    for (const [endpointName, count] of this.activeConnections.entries()) {
+      stats[endpointName] = count;
+    }
+    return stats;
+  }
+
   getEndpointForModel(modelName) {
     const cachedModels = this.getCachedModels();
     
@@ -95,11 +126,12 @@ class ModelsAggregator {
       const endpoints = this.modelToEndpointMap.get(modelName);
       
       if (endpoints && endpoints.length > 0) {
-        const endpoint = endpoints[0]; //change to round robin?
+        const endpoint = this.getLeastConnectedEndpoint(endpoints);
         logger.debug(`Model ${modelName} found at endpoint ${endpoint.name} using cache (${endpoints.length} available)`, {
           model: modelName,
           endpoint: endpoint.name,
-          totalEndpoints: endpoints.length
+          totalEndpoints: endpoints.length,
+          activeConnections: this.activeConnections.get(endpoint.name) || 0
         });
         return endpoint;
       }
