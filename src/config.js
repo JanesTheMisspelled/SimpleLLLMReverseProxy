@@ -27,7 +27,24 @@ class Config {
   }
 
   get endpoints() {
-    return this.config.endpoints.filter(ep => ep.enabled);
+    const enabledEndpoints = this.config.endpoints.filter(ep => ep.enabled);
+    const expandedEndpoints = [];
+    
+    enabledEndpoints.forEach(ep => {
+      const ports = Array.isArray(ep.port) ? ep.port : [ep.port];
+      
+      ports.forEach((port, index) => {
+        const newEndpoint = { ...ep, port };
+        
+        if (ports.length > 1) {
+          newEndpoint.name = `${ep.name}-${port}`;
+        }
+        
+        expandedEndpoints.push(newEndpoint);
+      });
+    });
+    
+    return expandedEndpoints;
   }
 
   get healthCheck() {

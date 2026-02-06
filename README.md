@@ -25,13 +25,13 @@ Edit `config/endpoints.yml` to configure your endpoints:
 ```yaml
 endpoints:
   - name: server1
-    address: 127.0.0.1
+    address: 127.0.0.2
     port: 8001
     enabled: true
     healthCheckPath: /health  # Optional: override global health check path, for example /health for llama-server
   - name: server2
     address: 127.0.0.1
-    port: 8002
+    port: [8002, 8003, 8004]  # Multiple ports - each port is treated as a unique endpoint
     enabled: true
 
 healthCheck:
@@ -48,6 +48,8 @@ cache:
 server:
   port: 8080
 ```
+
+**Multiple Ports**: You can specify multiple ports for an endpoint using an array (e.g., `port: [8002, 8003, 8004]`). Each port will be treated as a unique endpoint, with names like `server2-8002`, `server2-8003`, etc.
 
 ## Usage
 
