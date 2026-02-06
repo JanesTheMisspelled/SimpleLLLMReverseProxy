@@ -103,14 +103,24 @@ class Proxy {
         }
       });
 
+      const handleClientAbort = () => {
+        if (!proxyReq.destroyed) {
+          logger.info('Client aborted, cancelling upstream request', {
+            endpoint: endpoint.name
+          });
+          proxyReq.destroy();
+          modelsAggregator.decrementConnection(endpoint.name);
+        }
+      };
+
       res.on('close', () => {
-        logger.info('Client connection closed');
-        modelsAggregator.decrementConnection(endpoint.name);
+        if (!res.writableEnded) {
+          handleClientAbort();
+        }
       });
 
       req.on('close', () => {
-        logger.info('Request closed');
-        modelsAggregator.decrementConnection(endpoint.name);
+        handleClientAbort();
       });
 
       logger.info('Writing request body to upstream', { size: req.body.length });
