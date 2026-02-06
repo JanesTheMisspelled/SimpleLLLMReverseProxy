@@ -71,6 +71,35 @@ app.post('/health/force-check', async (req, res) => {
   });
 });
 
+app.post('/config/reload', async (req, res) => {
+  try {
+    logger.info('Config reload requested');
+    
+    config.reload();
+    modelsAggregator.clearCache();
+    
+    healthChecker.stop();
+    healthChecker.initializeStatus();
+    healthChecker.start();
+    
+    await healthChecker.checkAll();
+    const models = await modelsAggregator.getAllModels(true);
+    
+    res.json({
+      success: true,
+      message: 'Configuration reloaded successfully',
+      endpoints: config.endpoints.length,
+      models: models.data.length
+    });
+  } catch (error) {
+    logger.error('Failed to reload configuration', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 app.use((req, res) => {
   logger.warn('Route not found', { method: req.method, path: req.path });
   res.status(404).json({ error: 'Not found' });

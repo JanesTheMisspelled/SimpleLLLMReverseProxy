@@ -10,6 +10,7 @@ A simple reverse proxy manager for local LLM endpoints that aggregates models fr
 - **Health Checking**: Monitors endpoint availability and auto-failover with custom health check paths per endpoint
 - **Force Health Checks**: Manually trigger health checks on all endpoints via API
 - **Configuration**: Simple YAML-based endpoint configuration
+- **Config Reload**: Reload configuration without restarting the server via API
 
 ## Installation
 
@@ -131,6 +132,20 @@ Response format:
   },
   "healthy_endpoints": 2,
   "total_endpoints": 2
+}
+```
+
+### POST /config/reload
+
+Reloads the configuration from `config/endpoints.yml` without restarting the server. Clears the models cache and restarts the health checker.
+
+Response format:
+```json
+{
+  "success": true,
+  "message": "Configuration reloaded successfully",
+  "endpoints": 3,
+  "models": 15
 }
 ```
 
