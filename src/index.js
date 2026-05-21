@@ -126,8 +126,8 @@ function start() {
     logger.info(`Chat completions endpoint: http://localhost:${PORT}/v1/chat/completions`);
   });
 
-  server.timeout = 0;
-  server.keepAliveTimeout = 0;
+  server.timeout = 300000;
+  server.keepAliveTimeout = 65000;
 }
 
 function shutdown() {

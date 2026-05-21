@@ -45,8 +45,7 @@ class ModelsAggregator {
     
     const allModelsArrays = await Promise.all(modelPromises);
     
-    this.modelToEndpointMap.clear();
-    
+    const newMap = new Map();
     const seenModels = new Set();
     const uniqueModels = [];
     
@@ -58,15 +57,17 @@ class ModelsAggregator {
         if (modelId && !seenModels.has(modelId)) {
           seenModels.add(modelId);
           uniqueModels.push(model);
-          this.modelToEndpointMap.set(modelId, [endpoint]);
+          newMap.set(modelId, [endpoint]);
         } else if (modelId && seenModels.has(modelId)) {
-          const endpoints = this.modelToEndpointMap.get(modelId);
+          const endpoints = newMap.get(modelId);
           if (endpoints && !endpoints.some(e => e.name === endpoint.name)) {
             endpoints.push(endpoint);
           }
         }
       }
     });
+
+    this.modelToEndpointMap = newMap;
     
     logger.info(`Returning ${uniqueModels.length} unique models`);
     

@@ -1,5 +1,6 @@
 const http = require('http');
 const https = require('https');
+const axios = require('axios');
 const modelsAggregator = require('./models');
 const healthChecker = require('./health');
 const logger = require('./utils/logger');
@@ -103,7 +104,12 @@ class Proxy {
         }
       });
 
+      let abortHandled = false;
+
       const handleClientAbort = () => {
+        if (abortHandled) return;
+        abortHandled = true;
+
         if (!proxyReq.destroyed) {
           logger.info('Client aborted, cancelling upstream request', {
             endpoint: endpoint.name
@@ -151,7 +157,6 @@ class Proxy {
     for (const endpoint of healthyEndpoints) {
       try {
         const url = `http://${endpoint.address}:${endpoint.port}/v1/models`;
-        const axios = require('axios');
         const response = await axios.get(url, { timeout: 5000 });
         const models = response.data.data || [];
         
