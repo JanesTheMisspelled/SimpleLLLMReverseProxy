@@ -83,6 +83,7 @@ class ModelsAggregator {
   clearCache() {
     this.cache = null;
     this.cacheTimestamp = null;
+    this.modelToEndpointMap = new Map();
     logger.info('Cache cleared');
   }
 
@@ -121,24 +122,31 @@ class ModelsAggregator {
   }
 
   getEndpointForModel(modelName) {
-    const cachedModels = this.getCachedModels();
-    
-    if (cachedModels) {
-      const endpoints = this.modelToEndpointMap.get(modelName);
-      
-      if (endpoints && endpoints.length > 0) {
-        const endpoint = this.getLeastConnectedEndpoint(endpoints);
-        logger.debug(`Model ${modelName} found at endpoint ${endpoint.name} using cache (${endpoints.length} available)`, {
-          model: modelName,
-          endpoint: endpoint.name,
-          totalEndpoints: endpoints.length,
-          activeConnections: this.activeConnections.get(endpoint.name) || 0
-        });
-        return endpoint;
-      }
+    const endpoints = this.modelToEndpointMap.get(modelName);
+
+    if (endpoints && endpoints.length > 0) {
+      const endpoint = this.getLeastConnectedEndpoint(endpoints);
+      logger.debug(`Model ${modelName} found at endpoint ${endpoint.name} using cache (${endpoints.length} available)`, {
+        model: modelName,
+        endpoint: endpoint.name,
+        totalEndpoints: endpoints.length,
+        activeConnections: this.activeConnections.get(endpoint.name) || 0
+      });
+      return endpoint;
     }
-    
+
     return null;
+  }
+
+  addModelEndpointMapping(modelName, endpoint) {
+    const existing = this.modelToEndpointMap.get(modelName);
+    if (existing) {
+      if (!existing.some(e => e.name === endpoint.name)) {
+        existing.push(endpoint);
+      }
+    } else {
+      this.modelToEndpointMap.set(modelName, [endpoint]);
+    }
   }
 }
 

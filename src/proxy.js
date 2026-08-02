@@ -86,6 +86,7 @@ class Proxy {
 
         proxyRes.on('end', () => {
           logger.info('Upstream response ended', { totalChunks: dataCount });
+          settled = true;
           modelsAggregator.decrementConnection(endpoint.name);
           if (!res.writableEnded) {
             res.end();
@@ -98,6 +99,7 @@ class Proxy {
           endpoint: endpoint.name,
           error: error.message 
         });
+        settled = true;
         modelsAggregator.decrementConnection(endpoint.name);
         if (!res.headersSent) {
           res.status(502).json({ error: 'Bad gateway: Failed to reach endpoint' });
@@ -105,9 +107,10 @@ class Proxy {
       });
 
       let abortHandled = false;
+      let settled = false;
 
       const handleClientAbort = () => {
-        if (abortHandled) return;
+        if (abortHandled || settled) return;
         abortHandled = true;
 
         if (!proxyReq.destroyed) {
@@ -120,9 +123,7 @@ class Proxy {
       };
 
       res.on('close', () => {
-        if (!res.writableEnded) {
-          handleClientAbort();
-        }
+        handleClientAbort();
       });
 
       req.on('close', () => {
@@ -153,25 +154,31 @@ class Proxy {
     }
     
     const healthyEndpoints = healthChecker.getHealthyEndpoints();
-    
-    for (const endpoint of healthyEndpoints) {
-      try {
-        const url = `http://${endpoint.address}:${endpoint.port}/v1/models`;
-        const response = await axios.get(url, { timeout: 5000 });
-        const models = response.data.data || [];
-        
-        if (models.some(m => m.id === modelName || m.name === modelName)) {
-          return endpoint;
+
+    const results = await Promise.all(
+      healthyEndpoints.map(async (ep) => {
+        try {
+          const url = `http://${ep.address}:${ep.port}/v1/models`;
+          const response = await axios.get(url, { timeout: 5000 });
+          const models = response.data.data || [];
+          return { endpoint: ep, matches: models.some(m => m.id === modelName || m.name === modelName) };
+        } catch (error) {
+          logger.warn(`Failed to check endpoint ${ep.name} for model ${modelName}`, {
+            endpoint: ep.name,
+            model: modelName,
+            error: error.message
+          });
+          return { endpoint: ep, matches: false };
         }
-      } catch (error) {
-        logger.warn(`Failed to check endpoint ${endpoint.name} for model ${modelName}`, {
-          endpoint: endpoint.name,
-          model: modelName,
-          error: error.message
-        });
-      }
+      })
+    );
+
+    const match = results.find(r => r.matches);
+    if (match) {
+      modelsAggregator.addModelEndpointMapping(modelName, match.endpoint);
+      return match.endpoint;
     }
-    
+
     return null;
   }
 }

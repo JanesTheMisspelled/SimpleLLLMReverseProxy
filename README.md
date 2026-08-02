@@ -1,3 +1,6 @@
+# Only intended for Local use in a Homelab environment
+No security is implemented, including logs that might leak.
+
 # Simple LLM Reverse Proxy
 
 A simple reverse proxy manager for local LLM endpoints that aggregates models from multiple servers and routes requests based on model names.
