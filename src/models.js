@@ -29,6 +29,15 @@ class ModelsAggregator {
   }
 
   async getAllModels(force) {
+    if (config.mode === 'single-model') {
+      const modelName = config.singleModelName;
+      logger.debug('Single-model mode, returning static model list', { model: modelName });
+      return {
+        object: 'list',
+        data: modelName ? [{ id: modelName, object: 'model' }] : []
+      };
+    }
+
     const now = Date.now();
     
     if (force==false && this.cache && (now - this.cacheTimestamp) < config.cacheTTL) {
@@ -114,6 +123,23 @@ class ModelsAggregator {
       const minConnections = this.activeConnections.get(min.name) || 0;
       return connections < minConnections ? endpoint : min;
     });
+  }
+
+  getLeastConnectedHealthyEndpoint() {
+    const healthyEndpoints = healthChecker.getHealthyEndpoints();
+
+    if (healthyEndpoints.length === 0) {
+      logger.warn('No healthy endpoints available');
+      return null;
+    }
+
+    const endpoint = this.getLeastConnectedEndpoint(healthyEndpoints);
+    logger.debug(`Selected endpoint ${endpoint.name} from ${healthyEndpoints.length} healthy endpoints`, {
+      endpoint: endpoint.name,
+      totalEndpoints: healthyEndpoints.length,
+      activeConnections: this.activeConnections.get(endpoint.name) || 0
+    });
+    return endpoint;
   }
 
   getConnectionStats() {

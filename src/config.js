@@ -14,7 +14,15 @@ class Config {
     try {
       const fileContents = fs.readFileSync(this.configPath, 'utf8');
       this.config = yaml.load(fileContents);
-      logger.info('Configuration loaded successfully', { endpoints: this.config.endpoints.length });
+
+      if (this.config.mode === undefined) {
+        this.config.mode = 'model-lookup';
+      } else if (this.config.mode !== 'model-lookup' && this.config.mode !== 'single-model') {
+        logger.warn(`Unknown mode "${this.config.mode}", falling back to "model-lookup"`);
+        this.config.mode = 'model-lookup';
+      }
+
+      logger.info('Configuration loaded successfully', { endpoints: this.config.endpoints.length, mode: this.config.mode });
     } catch (e) {
       logger.error('Failed to load configuration', { error: e.message });
       throw e;
@@ -54,6 +62,14 @@ class Config {
 
   get healthCheck() {
     return this.config.healthCheck;
+  }
+
+  get mode() {
+    return this.config.mode;
+  }
+
+  get singleModelName() {
+    return this.config.model || null;
   }
 
   get serverPort() {

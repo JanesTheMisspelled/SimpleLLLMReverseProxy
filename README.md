@@ -9,6 +9,7 @@ A simple reverse proxy manager for local LLM endpoints that aggregates models fr
 
 - **Model Aggregation**: Combines models from all healthy endpoints into a single `/v1/models` response
 - **Request Routing**: Routes `/v1/chat/completions` requests to the appropriate endpoint based on the model name
+- **Single-Model Mode**: Optional mode that skips model discovery entirely and load-balances all requests across healthy endpoints (for setups where every endpoint runs the same model)
 - **Streaming Support**: Handles streaming responses from endpoints to clients
 - **Health Checking**: Monitors endpoint availability and auto-failover with custom health check paths per endpoint
 - **Force Health Checks**: Manually trigger health checks on all endpoints via API
@@ -46,13 +47,21 @@ healthCheck:
 cache:
   ttlMs: 30000                 # Cache TTL in milliseconds (optional)
   ttlMultiplier: null          # Cache TTL as multiplier of healthCheck interval (optional)
-                              # If both specified, the smaller value is used
+                               # If both specified, the smaller value is used
+
+mode: model-lookup             # model-lookup (default) or single-model
+model: my-model-name           # Only used in single-model mode: name advertised via /v1/models (optional)
 
 server:
   port: 8080
 ```
 
 **Multiple Ports**: You can specify multiple ports for an endpoint using an array (e.g., `port: [8002, 8003, 8004]`). Each port will be treated as a unique endpoint, with names like `server2-8002`, `server2-8003`, etc.
+
+### Modes
+
+- **`model-lookup`** (default): The proxy fetches `/v1/models` from each endpoint, aggregates the results, and routes each request to an endpoint that hosts the requested model (least-connected first).
+- **`single-model`**: Skips all model discovery (`/v1/models` is never fetched from endpoints). Every request is routed to the healthy endpoint with the fewest active connections, regardless of the requested model name. Use this when all endpoints run the same model. Optionally set `model:` to have `/v1/models` advertise that name.
 
 ## Usage
 

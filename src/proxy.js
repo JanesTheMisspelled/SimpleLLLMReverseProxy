@@ -3,6 +3,7 @@ const https = require('https');
 const axios = require('axios');
 const modelsAggregator = require('./models');
 const healthChecker = require('./health');
+const config = require('./config');
 const logger = require('./utils/logger');
 
 class Proxy {
@@ -13,23 +14,32 @@ class Proxy {
   async proxyChatCompletions(req, res) {
     let endpoint;
     try {
-      let body;
-      try {
-        body = JSON.parse(req.body.toString());
-      } catch (e) {
-        res.status(400).json({ error: 'Invalid JSON in request body' });
-        return;
-      }
+      let modelName = config.singleModelName;
+      let body = null;
 
-      const modelName = body.model;
+      if (config.mode !== 'single-model') {
+        try {
+          body = JSON.parse(req.body.toString());
+        } catch (e) {
+          res.status(400).json({ error: 'Invalid JSON in request body' });
+          return;
+        }
 
-      if (!modelName) {
-        res.status(400).json({ error: 'Missing "model" field in request body' });
-        return;
+        modelName = body.model;
+
+        if (!modelName) {
+          res.status(400).json({ error: 'Missing "model" field in request body' });
+          return;
+        }
       }
 
       endpoint = await this.findEndpointForModel(modelName);
       if (!endpoint) {
+        if (config.mode === 'single-model') {
+          res.status(503).json({ error: 'No healthy endpoints available' });
+          return;
+        }
+
         const allModels = await modelsAggregator.getAllModels(false);
         const availableModels = allModels.data.map(m => m.id || m.name).join(', ');
         
@@ -45,7 +55,7 @@ class Proxy {
       logger.info(`Proxying request for model ${modelName} to ${endpoint.name}`, {
         model: modelName,
         endpoint: endpoint.name,
-        stream: body.stream || false
+        stream: (body && body.stream) || false
       });
 
       const options = {
@@ -147,6 +157,10 @@ class Proxy {
   }
 
   async findEndpointForModel(modelName) {
+    if (config.mode === 'single-model') {
+      return modelsAggregator.getLeastConnectedHealthyEndpoint();
+    }
+
     const endpoint = modelsAggregator.getEndpointForModel(modelName);
     
     if (endpoint) {
