@@ -32,9 +32,14 @@ class Config {
     
     enabledEndpoints.forEach(ep => {
       const ports = Array.isArray(ep.port) ? ep.port : [ep.port];
-      
+      const weight = Number.isInteger(ep.weight) && ep.weight > 0 ? ep.weight : 1;
+
+      if (ep.weight !== undefined && ep.weight !== null && weight !== ep.weight) {
+        logger.warn(`Invalid weight "${ep.weight}" for endpoint ${ep.name}, must be a positive integer, defaulting to 1`);
+      }
+
       ports.forEach((port, index) => {
-        const newEndpoint = { ...ep, port };
+        const newEndpoint = { ...ep, port, weight };
         
         if (ports.length > 1) {
           newEndpoint.name = `${ep.name}-${port}`;

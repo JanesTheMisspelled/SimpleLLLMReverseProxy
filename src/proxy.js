@@ -40,7 +40,7 @@ class Proxy {
         return;
       }
 
-      modelsAggregator.incrementConnection(endpoint.name);
+      modelsAggregator.incrementConnection(endpoint);
 
       logger.info(`Proxying request for model ${modelName} to ${endpoint.name}`, {
         model: modelName,
@@ -87,7 +87,7 @@ class Proxy {
         proxyRes.on('end', () => {
           logger.info('Upstream response ended', { totalChunks: dataCount });
           settled = true;
-          modelsAggregator.decrementConnection(endpoint.name);
+          modelsAggregator.decrementConnection(endpoint);
           if (!res.writableEnded) {
             res.end();
           }
@@ -100,7 +100,7 @@ class Proxy {
           error: error.message 
         });
         settled = true;
-        modelsAggregator.decrementConnection(endpoint.name);
+        modelsAggregator.decrementConnection(endpoint);
         if (!res.headersSent) {
           res.status(502).json({ error: 'Bad gateway: Failed to reach endpoint' });
         }
@@ -118,7 +118,7 @@ class Proxy {
             endpoint: endpoint.name
           });
           proxyReq.destroy();
-          modelsAggregator.decrementConnection(endpoint.name);
+          modelsAggregator.decrementConnection(endpoint);
         }
       };
 
@@ -141,7 +141,7 @@ class Proxy {
         res.status(500).json({ error: 'Internal server error' });
       }
       if (endpoint) {
-        modelsAggregator.decrementConnection(endpoint.name);
+        modelsAggregator.decrementConnection(endpoint);
       }
     }
   }

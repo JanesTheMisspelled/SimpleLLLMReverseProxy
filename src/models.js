@@ -91,17 +91,20 @@ class ModelsAggregator {
     return this.cache;
   }
 
-  incrementConnection(endpointName) {
-    const current = this.activeConnections.get(endpointName) || 0;
-    this.activeConnections.set(endpointName, current + 1);
-    logger.debug(`Incremented connection for ${endpointName}`, { count: current + 1 });
+  incrementConnection(endpoint) {
+    const weight = endpoint.weight || 1;
+    const current = this.activeConnections.get(endpoint.name) || 0;
+    this.activeConnections.set(endpoint.name, current + weight);
+    logger.debug(`Incremented connection for ${endpoint.name}`, { count: current + weight, weight });
   }
 
-  decrementConnection(endpointName) {
-    const current = this.activeConnections.get(endpointName) || 0;
+  decrementConnection(endpoint) {
+    const weight = endpoint.weight || 1;
+    const current = this.activeConnections.get(endpoint.name) || 0;
     if (current > 0) {
-      this.activeConnections.set(endpointName, current - 1);
-      logger.debug(`Decremented connection for ${endpointName}`, { count: current - 1 });
+      const next = Math.max(0, current - weight);
+      this.activeConnections.set(endpoint.name, next);
+      logger.debug(`Decremented connection for ${endpoint.name}`, { count: next, weight });
     }
   }
 

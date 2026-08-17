@@ -7,6 +7,7 @@ endpoints:
     address: 192.168.0.31
     port: [9001, 9002]
     enabled: true
+    weight: 1
     healthCheckPath: /health 
 
 healthCheck:
