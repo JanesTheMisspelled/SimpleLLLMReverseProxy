@@ -37,6 +37,7 @@ endpoints:
     address: 127.0.0.1
     port: [8002, 8003, 8004]  # Multiple ports - each port is treated as a unique endpoint
     enabled: true
+    priority: 10               # Optional: integer, higher wins when endpoints tie on active connections (default 0)
 
 healthCheck:
   interval: 30000              # Check every 30 seconds

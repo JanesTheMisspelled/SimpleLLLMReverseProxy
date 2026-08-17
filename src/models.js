@@ -121,7 +121,13 @@ class ModelsAggregator {
     return endpoints.reduce((min, endpoint) => {
       const connections = this.activeConnections.get(endpoint.name) || 0;
       const minConnections = this.activeConnections.get(min.name) || 0;
-      return connections < minConnections ? endpoint : min;
+      if (connections < minConnections) {
+        return endpoint;
+      }
+      if (connections === minConnections && (endpoint.priority || 0) > (min.priority || 0)) {
+        return endpoint;
+      }
+      return min;
     });
   }
 

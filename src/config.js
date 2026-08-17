@@ -46,8 +46,14 @@ class Config {
         logger.warn(`Invalid weight "${ep.weight}" for endpoint ${ep.name}, must be a positive integer, defaulting to 1`);
       }
 
+      const priority = Number.isInteger(ep.priority) ? ep.priority : 0;
+
+      if (ep.priority !== undefined && ep.priority !== null && priority !== ep.priority) {
+        logger.warn(`Invalid priority "${ep.priority}" for endpoint ${ep.name}, must be an integer, defaulting to 0`);
+      }
+
       ports.forEach((port, index) => {
-        const newEndpoint = { ...ep, port, weight };
+        const newEndpoint = { ...ep, port, weight, priority };
         
         if (ports.length > 1) {
           newEndpoint.name = `${ep.name}-${port}`;
